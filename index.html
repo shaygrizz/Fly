@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#09090c">
+<title>Per te</title>
+<style>
+  :root { color-scheme: dark; --ink: #09090c; --rose: #ae7180; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 100%; min-height: 100%; background: var(--ink); }
+  body { overflow: hidden; font-family: Georgia, 'Times New Roman', serif; }
+  [hidden] { display: none !important; }
+  .scene { position: fixed; inset: 0; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; transition: opacity 1.4s ease; }
+  .open-heart {
+    position: absolute; top: 50%; left: 50%; width: 76px; height: 76px;
+    padding: 10px; border: 0; background: transparent; cursor: pointer;
+    opacity: 0; visibility: hidden; transform: translate(-50%, -50%) scale(.75);
+    transition: opacity 1.6s ease, transform 1.6s ease, visibility 1.6s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .open-heart.ready { opacity: 1; visibility: visible; transform: translate(-50%, -50%) scale(1); }
+  .open-heart svg { width: 100%; height: 100%; overflow: visible; display: block;
+    fill: #9b5c6d; stroke: #c48e9c; stroke-width: .6;
+    transition: fill .3s, scale .3s; animation: heartbeat 3.6s ease-in-out infinite; }
+  .open-heart:hover svg { fill: #b37687; scale: 1.06; }
+  .open-heart:focus-visible { outline: 1px solid #c48e9c; outline-offset: 7px; border-radius: 50%; }
+  .reading canvas { opacity: .13; }
+  .reading .open-heart { opacity: 0; visibility: hidden; pointer-events: none; }
+  .letter-scroll {
+    position: fixed; inset: 0; z-index: 2; overflow: auto; overscroll-behavior: contain;
+    padding: max(64px, env(safe-area-inset-top)) 26px max(80px, env(safe-area-inset-bottom));
+    scrollbar-width: thin; scrollbar-color: #65434c transparent;
+    background: rgba(9,9,12,.74); -webkit-overflow-scrolling: touch;
+  }
+  .letter {
+    max-width: 610px; margin: 0 auto; color: #cbbfc1;
+    animation: letter-in 1.3s ease both;
+  }
+  .dedication { margin: 0 0 20px; color: #ac8390; font-size: 13px;
+    font-weight: 400; letter-spacing: .075em; line-height: 1.7; }
+  h1 { margin: 0 0 42px; color: #e2c6ce; font-size: clamp(58px, 9vw, 82px);
+    line-height: 1.08; font-weight: 400; font-style: italic; letter-spacing: -.04em; }
+  h1:focus { outline: none; }
+  .letter p:not(.dedication, .signature) { font-size: clamp(17px, 2.2vw, 19px); line-height: 1.85; margin: 0 0 25px; }
+  .signature { color: #c799a7; font-size: 31px; font-style: italic; margin: 44px 0 0; }
+  @keyframes heartbeat { 0%, 100% { transform: scale(1); } 45% { transform: scale(1.055); } }
+  @keyframes letter-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+  @media (max-width: 600px) {
+    .letter-scroll { padding: max(42px, env(safe-area-inset-top)) 27px 64px; }
+    .dedication { font-size: 11px; letter-spacing: .04em; }
+    h1 { margin-bottom: 30px; }
+    .open-heart { width: 62px; height: 62px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="scene" id="scene">
+    <canvas id="canvas" role="img" aria-label="Un grande cuore fatto di parole i love u, circondato da piccoli cuori in volo."></canvas>
+    <button class="open-heart" id="openHeart" type="button" aria-label="Apri la lettera" aria-controls="letter" disabled>
+      <svg viewBox="0 0 64 60" aria-hidden="true"><path d="M32 55C26 49 5 35 5 19C5 3 25 0 32 14C39 0 59 3 59 19C59 35 38 49 32 55Z"/></svg>
+    </button>
+  </div>
+  <section class="letter-scroll" id="letter" aria-labelledby="letterTitle" hidden>
+    <article class="letter">
+      <p class="dedication">per la persona più importante per me</p>
+      <h1 id="letterTitle" tabindex="-1">Ti amo</h1>
+      <p>Quando te lo dico, lo intendo davvero. Dopo tutto il tempo che abbiamo passato insieme, mi sono davvero innamorato di te. Forse potrà sembrarti una cosa stupida, affrettata o magari solo una mia fissazione.</p>
+      <p>Ma sento davvero di amarti così tanto che vorrei averti sempre accanto. Adoro sentire la tua voce ogni volta. Ogni volta che guardo il telefono, spero di trovare un tuo messaggio. Amo quando rimaniamo solo io e te a parlare fino a tardi, adoro quando guardiamo qualcosa insieme e adoro ogni momento passato con te.</p>
+      <p>Sei incredibilmente bella, intelligente, affascinante e divertente. Sono stato davvero fortunato a incontrarti.</p>
+      <p>Ti prego, non nascondermi niente. Mi fa davvero male sentirti allontanare da me e vederti diventare più fredda nei miei confronti. Odio stare in ansia e dovermi chiedere continuamente cosa stia succedendo: per me è davvero difficile.</p>
+      <p>Ti amo tantissimo e ti chiedo soltanto di essere sempre sincera con me, qualunque cosa sia. Anche se si tratta di una piccolezza o di qualsiasi altra cosa, per favore dimmi sempre quello che hai per la testa. Cercherò sempre di sostenerti e di darti tutto l’aiuto di cui hai bisogno.</p>
+      <p class="signature">Ti amo ♡</p>
+    </article>
+  </section>
+</main>
+<script>
+'use strict';
+// Всё редактируется здесь. Время — в секундах; письмо — в HTML выше.
+const SETTINGS = {
+  words: 'i love u',
+  layers: 8,
+  revealAt: 10,
+  flyingHearts: 42,
+  flightSpeed: 2.4,
+  wordSpeed: 22,
+  assembleSeconds: 7.2,
+  brightenSeconds: 10,
+  textColor: '#ba8192',
+  background: '#09090c'
+};
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const button = document.getElementById('openHeart');
+const letter = document.getElementById('letter');
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const TAU = Math.PI * 2;
+let width = 0, height = 0, size = 0, font = 0, backdrop;
+let elapsed = reducedMotion.matches ? SETTINGS.revealAt + 2 : 0;
+let lastTime = null, frame = null, reading = false, ready = false;
+let rings = [], glyphs = [], phraseWidth = 0;
+let illumination = 0;
+const heartGlowSprites = [];
+const clamp = x => Math.max(0, Math.min(1, x));
+const smooth = x => { x = clamp(x); return x * x * (3 - 2 * x); };
+const mix = (a, b, t) => a + (b - a) * t;
+
+// Детерминированное расположение: при смене размера рисунок не мерцает.
+function randomGenerator(seed) {
+  return () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+}
+const random = randomGenerator(1709);
+const flyers = Array.from({length: SETTINGS.flyingHearts}, () => ({
+  angle: random() * TAU, distance: .32 + random() * .82,
+  phase: random(), speed: .032 + random() * .025,
+  size: 3 + random() * 6, tilt: (random() - .5) * 1.2,
+  filled: random() > .72
+}));
+// Округлые верхние доли и вытянутый кончик, как на присланном изображении.
+const contour = [];
+let perimeter = 0;
+for (let i=0; i<=1600; i++) {
+  const t=i/1600*TAU;
+  const p={x:Math.sin(t)**3,
+    y:-(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t)+2.5)/16};
+  if (i) perimeter += Math.hypot(p.x-contour[i-1].x,p.y-contour[i-1].y);
+  contour.push({...p,distance:perimeter});
+}
+function onContour(distance) {
+  const d = ((distance%perimeter)+perimeter)%perimeter;
+  let lo=1, hi=contour.length-1;
+  while(lo<hi) { const mid=(lo+hi)>>1; if(contour[mid].distance<d) lo=mid+1; else hi=mid; }
+  const a=contour[lo-1], b=contour[lo];
+  const f=(d-a.distance)/(b.distance-a.distance || 1);
+  return {x:mix(a.x,b.x,f),y:mix(a.y,b.y,f),angle:Math.atan2(b.y-a.y,b.x-a.x)};
+}
+// Маленьким сердцам достаточно четырёх кривых вместо 1600 точек.
+const smallHeart = new Path2D();
+smallHeart.moveTo(0, -.48);
+smallHeart.bezierCurveTo(-.50, -1.18, -1.28, -.58, -.82, .05);
+smallHeart.bezierCurveTo(-.59, .40, -.22, .68, 0, .91);
+smallHeart.bezierCurveTo(.22, .68, .59, .40, .82, .05);
+smallHeart.bezierCurveTo(1.28, -.58, .50, -1.18, 0, -.48);
+smallHeart.closePath();
+// Свечение кэшируется: размытие не пересчитывается для каждого кадра.
+for (const filled of [false, true]) {
+  const sprite = document.createElement('canvas');
+  sprite.width = sprite.height = 96;
+  const c = sprite.getContext('2d');
+  c.translate(48, 48); c.scale(20, 20);
+  c.fillStyle = c.strokeStyle = '#efacc5';
+  c.shadowColor = '#dd739e'; c.shadowBlur = 10; c.lineWidth = .065;
+  if (filled) c.fill(smallHeart); else c.stroke(smallHeart);
+  heartGlowSprites.push(sprite);
+}
+function resize() {
+  width = window.innerWidth; height = window.innerHeight;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  size = Math.min(width * .425, height * .425, 430);
+  font = Math.max(8, Math.min(13, size * .041));
+  ctx.font = `${font}px Georgia`;
+  phraseWidth = ctx.measureText(SETTINGS.words).width;
+  glyphs = [];
+  let advance = 0;
+  // Буквы кэшируются отдельно, чтобы слова плавно огибали остриё.
+  for (const char of SETTINGS.words) {
+    const charWidth = ctx.measureText(char).width;
+    const entry = {offset:advance+charWidth/2-phraseWidth/2, blank:char===' ',
+      width:Math.ceil(charWidth+32),height:Math.ceil(font*2+32)};
+    advance += charWidth;
+    if (!entry.blank) {
+      for (const glow of [false,true]) {
+        const sprite=document.createElement('canvas');
+        sprite.width=Math.ceil(entry.width*dpr); sprite.height=Math.ceil(entry.height*dpr);
+        const c=sprite.getContext('2d'); c.scale(dpr,dpr);
+        c.font=`${font}px Georgia`; c.textAlign='center'; c.textBaseline='middle';
+        c.fillStyle=glow?'#f3bcd1':SETTINGS.textColor;
+        if(glow) {c.shadowColor='#e97ea8';c.shadowBlur=7*dpr;}
+        c.fillText(char,entry.width/2,entry.height/2);
+        entry[glow?'glow':'base']=sprite;
+      }
+    }
+    glyphs.push(entry);
+  }
+  rings = Array.from({length:SETTINGS.layers},(_,i)=>1-.6*i/(SETTINGS.layers-1)).map((radius,i)=>({radius,
+    count:Math.max(4,Math.floor(perimeter*size*radius/(phraseWidth+font*1.8))),
+    alpha:i===0?.85:.57-.18*i/(SETTINGS.layers-1), index:i}));
+  backdrop = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.max(width,height)*.7);
+  backdrop.addColorStop(0, '#151016');
+  backdrop.addColorStop(.65, SETTINGS.background);
+  backdrop.addColorStop(1, '#070709');
+  render();
+}
+function drawWords() {
+  if (illumination === 0) return;
+  const orbitTime=Math.max(0,elapsed-SETTINGS.assembleSeconds);
+  // После сборки движение по контуру плавно набирает скорость.
+  const travel=reducedMotion.matches?0:SETTINGS.wordSpeed*(orbitTime-1.5*(1-Math.exp(-orbitTime/1.5)));
+  for (const ring of rings) {
+    const scale = size*ring.radius;
+    for(let i=0;i<ring.count;i++) {
+      const distance=(i+.5)/ring.count*perimeter+travel/scale*(ring.index%2?-1:1);
+      const center=onContour(distance);
+      const direction=Math.cos(center.angle)<0?-1:1;
+      const seed=((i*73+ring.index*47)%211)/211;
+      const delay=seed*2.8;
+      const arrival=reducedMotion.matches?1:smooth((elapsed-delay)/4.4);
+      const flightAngle=seed*TAU*3+(1-arrival)*.9;
+      const launchRadius=Math.hypot(width,height)*.65;
+      const launchX=Math.cos(flightAngle)*launchRadius;
+      const launchY=Math.sin(flightAngle)*launchRadius;
+      const launchTilt=(seed-.5)*.7;
+      const appearance=reducedMotion.matches?1:smooth((elapsed-delay)/.8);
+      for(const [glyphIndex,g] of glyphs.entries()) {
+        if(g.blank) continue;
+        const p=onContour(distance+direction*g.offset/scale);
+        const targetX=p.x*scale, targetY=p.y*scale;
+        const x=mix(launchX+g.offset*Math.cos(launchTilt),targetX,arrival);
+        const y=mix(launchY+g.offset*Math.sin(launchTilt),targetY,arrival);
+        const clearance=mix(1,smooth((Math.hypot(targetX,targetY)-(width<=600?29:39))/16),arrival);
+        const targetAngle=p.angle+(direction<0?Math.PI:0);
+        const angleDelta=Math.atan2(Math.sin(targetAngle-launchTilt),Math.cos(targetAngle-launchTilt));
+        const alpha=ring.alpha*clearance*mix(.22,1,illumination)*appearance;
+        ctx.save();ctx.translate(x,y);ctx.rotate(launchTilt+angleDelta*arrival);
+        ctx.globalAlpha=clamp(alpha*1.15);
+        ctx.drawImage(g.base,-g.width/2,-g.height/2,g.width,g.height);
+        ctx.globalAlpha=clamp(alpha*.85*illumination);
+        ctx.drawImage(g.glow,-g.width/2,-g.height/2,g.width,g.height);
+        ctx.restore();
+      }
+    }
+  }
+}
+function drawFlyingHearts(t) {
+  for (const h of flyers) {
+    const progress = (h.phase + t * h.speed * SETTINGS.flightSpeed) % 1;
+    const depth = .18 + progress ** 2 * 1.55;
+    const angle = h.angle + t * .035;
+    const x = width/2 + Math.cos(angle) * width * h.distance * depth;
+    const y = height/2 + Math.sin(angle) * height * h.distance * depth - progress*24;
+    const r = h.size * (.4 + progress * 1.4);
+    const fade = smooth(progress * 6) * smooth((1-progress) * 5);
+    const outside = Math.hypot((x-width/2)/size, (y-height/2)/size);
+    ctx.save(); ctx.translate(x,y); ctx.rotate(h.tilt + Math.sin(t*.2 + h.angle)*.13);
+    const visibility = fade * mix(.18, .64, smooth((outside - .72) / .36));
+    ctx.scale(r,r); ctx.globalAlpha = visibility * mix(.12, 1, illumination);
+    ctx.fillStyle = '#c98a9f'; ctx.strokeStyle = '#dca2b7'; ctx.lineWidth = .8/r;
+    if (h.filled) ctx.fill(smallHeart); else ctx.stroke(smallHeart);
+    ctx.globalAlpha = visibility * illumination * .85;
+    ctx.drawImage(heartGlowSprites[Number(h.filled)], -2.4, -2.4, 4.8, 4.8);
+    ctx.restore();
+  }
+}
+function render() {
+  illumination = smooth(elapsed / SETTINGS.brightenSeconds);
+  ctx.globalAlpha = 1; ctx.fillStyle = backdrop; ctx.fillRect(0,0,width,height);
+  drawFlyingHearts(elapsed);
+  ctx.save(); ctx.translate(width/2,height/2);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  // Сначала надписи прилетают, затем непрерывно идут по контурам сердца.
+  drawWords();
+  ctx.restore();
+}
+function revealButton() {
+  if (ready) return;
+  ready = true; button.disabled = false; button.classList.add('ready');
+}
+function tick(now) {
+  frame = null;
+  if (document.hidden || reading) return;
+  if (lastTime !== null) elapsed += Math.min((now-lastTime)/1000,.06);
+  lastTime = now;
+  render();
+  if (elapsed >= SETTINGS.revealAt) revealButton();
+  if (!reducedMotion.matches) frame = requestAnimationFrame(tick);
+}
+function start() {
+  if (reading || document.hidden || frame !== null) return;
+  lastTime = null;
+  if (reducedMotion.matches) { elapsed = Math.max(elapsed,SETTINGS.revealAt+2); render(); revealButton(); }
+  else frame = requestAnimationFrame(tick);
+}
+button.addEventListener('click', () => {
+  if (!ready || reading) return;
+  reading = true;
+  cancelAnimationFrame(frame); frame = null;
+  document.body.classList.add('reading');
+  button.disabled = true;
+  letter.hidden = false; letter.scrollTop = 0;
+  document.getElementById('scene').setAttribute('aria-hidden','true');
+  document.getElementById('letterTitle').focus({preventScroll:true});
+});
+window.addEventListener('resize',resize);
+window.visualViewport?.addEventListener('resize',resize);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { cancelAnimationFrame(frame); frame = null; lastTime = null; }
+  else start();
+});
+reducedMotion.addEventListener('change', () => {
+  cancelAnimationFrame(frame); frame = null; start();
+});
+resize(); start();
+</script>
+</body>
+</html>
